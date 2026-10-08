@@ -41,7 +41,7 @@ def print_grid(grid):
 
 def main():
     FONT_FILE = "fonts/DepartureMono-Regular.otf"
-    msg = "A quick brown fox jumped over the lazy dog"
+    msg = "A quick brown fox jumps over the lazy dog"
 
     try:
         for char in msg:
