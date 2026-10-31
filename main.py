@@ -85,9 +85,9 @@ def extract_patterns(grid: list):
         for row in grid[:4]:
             pattern0 = (pattern0 << 1) + row[0]
             pattern1 = (pattern1 << 1) + row[1]
-            pattern2 = (pattern2 << 1) + row[1]
-            pattern3 = (pattern3 << 1) + row[1]
-            pattern4 = (pattern4 << 1) + row[1]
+            pattern2 = (pattern2 << 1) + row[2]
+            pattern3 = (pattern3 << 1) + row[3]
+            pattern4 = (pattern4 << 1) + row[4]
 
         col0.append(pattern0)
         col1.append(pattern1)
@@ -96,6 +96,18 @@ def extract_patterns(grid: list):
         col4.append(pattern4)
 
         del grid[:4]
+
+    # remove trailing 0b0000 patterns
+    while col0[len(col0) - 1] == 0b0000:
+        del col0[len(col0) - 1]
+    while col1[len(col1) - 1] == 0b0000:
+        del col1[len(col1) - 1]
+    while col2[len(col2) - 1] == 0b0000:
+        del col2[len(col2) - 1]
+    while col3[len(col3) - 1] == 0b0000:
+        del col3[len(col3) - 1]
+    while col4[len(col4) - 1] == 0b0000:
+        del col4[len(col4) - 1]
 
     return col0, col1, col2, col3, col4
 
@@ -201,9 +213,9 @@ def build_chests_from_patterns(patterns: list):
     return chest_r, chest_l
 
 
-def generate_schematic(grid: list):
+def generate_schematic(grid: list, msg: str):
     grid_even, grid_odd = split_grid(grid)
-    # print_grid(grid_even[:12])
+    # print_grid(grid_even)
     # print_grid(grid_odd)
 
     (
@@ -224,14 +236,46 @@ def generate_schematic(grid: list):
     # print(even_patterns_1)
 
     even_0_chest_l, even_0_chest_r = build_chests_from_patterns(even_patterns_0)
+    even_1_chest_l, even_1_chest_r = build_chests_from_patterns(even_patterns_1)
+    even_2_chest_l, even_2_chest_r = build_chests_from_patterns(even_patterns_2)
+    even_3_chest_l, even_3_chest_r = build_chests_from_patterns(even_patterns_3)
+    even_4_chest_l, even_4_chest_r = build_chests_from_patterns(even_patterns_4)
     # print(even_0_chest_l)
     # print(even_0_chest_r)
 
-    schem = mcschematic.MCSchematic()
+    odd_0_chest_l, odd_0_chest_r = build_chests_from_patterns(odd_patterns_0)
+    odd_1_chest_l, odd_1_chest_r = build_chests_from_patterns(odd_patterns_1)
+    odd_2_chest_l, odd_2_chest_r = build_chests_from_patterns(odd_patterns_2)
+    odd_3_chest_l, odd_3_chest_r = build_chests_from_patterns(odd_patterns_3)
+    odd_4_chest_l, odd_4_chest_r = build_chests_from_patterns(odd_patterns_4)
 
+    schem = mcschematic.MCSchematic()
     schem.setBlock((0, 0, -1), even_0_chest_l)
     schem.setBlock((1, 0, -1), even_0_chest_r)
-    schem.save("schems", "test", mcschematic.Version.JE_1_21)
+    schem.setBlock((2, 0, -1), even_1_chest_l)
+    schem.setBlock((3, 0, -1), even_1_chest_r)
+    schem.setBlock((4, 0, -1), even_2_chest_l)
+    schem.setBlock((5, 0, -1), even_2_chest_r)
+    schem.setBlock((6, 0, -1), even_3_chest_l)
+    schem.setBlock((7, 0, -1), even_3_chest_r)
+    schem.setBlock((8, 0, -1), even_4_chest_l)
+    schem.setBlock((9, 0, -1), even_4_chest_r)
+
+    schem.setBlock((0, -1, -1), odd_0_chest_l)
+    schem.setBlock((1, -1, -1), odd_0_chest_r)
+    schem.setBlock((2, -1, -1), odd_1_chest_l)
+    schem.setBlock((3, -1, -1), odd_1_chest_r)
+    schem.setBlock((4, -1, -1), odd_2_chest_l)
+    schem.setBlock((5, -1, -1), odd_2_chest_r)
+    schem.setBlock((6, -1, -1), odd_3_chest_l)
+    schem.setBlock((7, -1, -1), odd_3_chest_r)
+    schem.setBlock((8, -1, -1), odd_4_chest_l)
+    schem.setBlock((9, -1, -1), odd_4_chest_r)
+    schem.save(
+        "schems",
+        re.sub(r"[^a-zA-Z0-9]", "", msg.lower())[:10],
+        mcschematic.Version.JE_1_21,
+    )
 
 
 def print_grid(grid: list):
@@ -247,7 +291,7 @@ def main():
     grid = create_msg_grid(msg, FONT_FILE)
     # print_grid(grid)
 
-    generate_schematic(grid)
+    generate_schematic(grid, msg)
 
 
 if __name__ == "__main__":
