@@ -1,3 +1,5 @@
+import re
+
 from PIL import Image, ImageDraw, ImageFont
 import mcschematic
 from constants import *
@@ -62,8 +64,8 @@ def split_grid(grid: list):
             grid_odd.append(row)
 
     # append empty rows as needed to be a multiple of 4
-    grid_even.append(([0] * 5) * ((4 - (len(grid_even) % 4)) % 4))
-    grid_odd.append(([0] * 5) * ((4 - (len(grid_odd) % 4)) % 4))
+    grid_even.extend([[0] * 5] * ((4 - (len(grid_even) % 4)) % 4))
+    grid_odd.extend([[0] * 5] * ((4 - (len(grid_odd) % 4)) % 4))
 
     return grid_even, grid_odd
 
