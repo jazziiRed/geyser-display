@@ -145,9 +145,7 @@ def create_shulker(current_shulker: int, contents: str):
         + str(slot)
         + 'b,count:1,id:"minecraft:shulker_box",components:{"minecraft:container":['
         + contents
-        + '],"minecraft:custom_name":{"text":"'
-        + str(current_shulker)
-        + '"}}}'
+        + "]}}"
     )
 
 
