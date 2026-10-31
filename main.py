@@ -4,6 +4,13 @@ from PIL import Image, ImageDraw, ImageFont
 import mcschematic
 from constants import *
 
+STRUCT_DROPPERS_SINGLE_EVEN = mcschematic.MCStructure()
+STRUCT_DROPPERS_DOUBLE_EVEN = mcschematic.MCStructure()
+STRUCT_DROPPERHOPPER_EVEN = mcschematic.MCStructure()
+STRUCT_DROPPERS_SINGLE_ODD = mcschematic.MCStructure()
+STRUCT_DROPPERS_DOUBLE_ODD = mcschematic.MCStructure()
+STRUCT_DROPPERHOPPER_ODD = mcschematic.MCStructure()
+
 
 def letter_to_pixel_grid(font_path: str, letter: str, size=(5, 14)):
     img = Image.new("1", size, color=0)
@@ -213,7 +220,71 @@ def build_chests_from_patterns(patterns: list):
     return chest_r, chest_l
 
 
+# minecraft:dropper[facing=east,triggered=false]{Items:[{Slot:0b,count:1,id:"minecraft:redstone_torch"}]}
+# minecraft:hopper[enabled=false,facing=east]{Items:[],TransferCooldown:0}
+def initialize_structures():
+    # STRUCT_DROPPERS_SINGLE_EVEN
+    STRUCT_DROPPERS_SINGLE_EVEN.setBlock(
+        (0, 0, 0),
+        "minecraft:dropper[facing=east,triggered=false]{Items:[]}",
+    )
+    STRUCT_DROPPERS_SINGLE_EVEN.setBlock(
+        (1, 0, 0),
+        'minecraft:dropper[facing=west,triggered=false]{Items:[{Slot:0b,count:1,id:"minecraft:redstone_torch"}]}',
+    )
+
+    # STRUCT_DROPPERS_DOUBLE_EVEN
+    STRUCT_DROPPERS_DOUBLE_EVEN.setBlock(
+        (0, 0, 0),
+        'minecraft:dropper[facing=east,triggered=false]{Items:[{Slot:0b,count:1,id:"minecraft:redstone_torch"}]}',
+    )
+    STRUCT_DROPPERS_DOUBLE_EVEN.setBlock(
+        (1, 0, 0),
+        'minecraft:dropper[facing=west,triggered=false]{Items:[{Slot:0b,count:1,id:"minecraft:redstone_torch"}]}',
+    )
+
+    # STRUCT_DROPPERHOPPER_EVEN
+    STRUCT_DROPPERHOPPER_EVEN.setBlock(
+        (0, 0, 0),
+        "minecraft:hopper[enabled=false,facing=east]{Items:[],TransferCooldown:0}",
+    )
+    STRUCT_DROPPERHOPPER_EVEN.setBlock(
+        (1, 0, 0), "minecraft:dispenser[facing=down,triggered=false]{Items:[]}"
+    )
+
+    # STRUCT_DROPPERS_SINGLE_ODD
+    STRUCT_DROPPERS_SINGLE_ODD.setBlock(
+        (0, 0, 0),
+        'minecraft:dropper[facing=east,triggered=false]{Items:[{Slot:0b,count:1,id:"minecraft:redstone_torch"}]}',
+    )
+    STRUCT_DROPPERS_SINGLE_ODD.setBlock(
+        (1, 0, 0), "minecraft:dropper[facing=west,triggered=false]{Items:[]}"
+    )
+
+    # STRUCT_DROPPERS_DOUBLE_ODD
+    STRUCT_DROPPERS_DOUBLE_ODD.setBlock(
+        (0, 0, 0),
+        'minecraft:dropper[facing=east,triggered=false]{Items:[{Slot:0b,count:1,id:"minecraft:redstone_torch"}]}',
+    )
+    STRUCT_DROPPERS_DOUBLE_ODD.setBlock(
+        (1, 0, 0),
+        'minecraft:dropper[facing=west,triggered=false]{Items:[{Slot:0b,count:1,id:"minecraft:redstone_torch"}]}',
+    )
+
+    # STRUCT_DROPPERHOPPER_ODD
+    STRUCT_DROPPERHOPPER_ODD.setBlock(
+        (0, 0, 0),
+        "minecraft:dispenser[facing=down,triggered=false]{Items:[]}",
+    )
+    STRUCT_DROPPERHOPPER_ODD.setBlock(
+        (1, 0, 0),
+        "minecraft:hopper[enabled=false,facing=west]{Items:[],TransferCooldown:0}",
+    )
+
+
 def generate_schematic(grid: list, msg: str):
+    initialize_structures()
+
     grid_even, grid_odd = split_grid(grid)
     # print_grid(grid_even)
     # print_grid(grid_odd)
@@ -286,7 +357,7 @@ def print_grid(grid: list):
 def main():
     FONT_FILE = "fonts/DepartureMono-Regular.otf"
     msg = "A quick brown fox jumps over the lazy dog"
-    # msg = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum"
+    # msg = "The FitnessGram Pacer Test is a multistage aerobic capacity test that progressively gets more difficult as it continues. The 20 meter pacer test will begin in 30 seconds. Line up at the start. The running speed starts slowly but gets faster each minute after you hear this signal bodeboop. A sing lap should be completed every time you hear this sound. ding Remember to run in a straight line and run as long as possible. The second time you fail to complete a lap before the sound, your test is over. The test will begin on the word start. On your mark. Get ready!… Start. ding"
 
     grid = create_msg_grid(msg, FONT_FILE)
     # print_grid(grid)
