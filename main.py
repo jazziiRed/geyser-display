@@ -20,12 +20,10 @@ def letter_to_pixel_grid(font_path: str, letter: str, size=(5, 14)):
 
     draw.text((size[0] / 2, size[1] / 2), letter, fill=1, font=font, anchor="mm")
 
-    # 4. Read the pixels out line-by-line
     grid = []
     for y in range(size[1]):
         row = []
         for x in range(size[0]):
-            # getpixel returns 1 if white/text, 0 if black/background
             pixel_value = img.getpixel((x, y))
             row.append(pixel_value)
         grid.append(row)
@@ -42,7 +40,7 @@ def trim_grid(grid: list):
         elif row != [0, 0, 0, 0, 0]:
             bottom_row = index
 
-    return grid[top_row : bottom_row + 1] if top_row != -1 else [grid[0]]
+    return grid[top_row : bottom_row + 1] if top_row != -1 else grid[:2]
 
 
 def create_msg_grid(msg: str, font_file: str):
@@ -178,6 +176,7 @@ def build_chests_from_patterns(patterns: list):
     wool_index = 0
     current_slot = 0
     current_shulker = 1
+    item_count = 0
 
     for index, pattern in enumerate(patterns):
         # rectify the running slot number to 0-26
@@ -190,17 +189,25 @@ def build_chests_from_patterns(patterns: list):
             zero_count += 1
             if index == len(patterns) - 1 or patterns[index + 1] != 0b0000:
                 shulker_str += new_wool(fixed_slot, wool_index, zero_count) + ","
+                item_count += zero_count
                 zero_count = 0
                 wool_index = (wool_index + 1) % 16
                 current_slot += 1
                 fixed_slot += 1
         else:
             shulker_str += new_disc(fixed_slot, pattern) + ","
+            item_count += 1
             current_slot += 1
             fixed_slot += 1
 
         # if the new fixed slot goes beyond 26, create a shulker and put it in the appropriate chest
         if index == len(patterns) - 1 or fixed_slot >= 27:
+            if item_count < MIN_SHULKER_FILL:
+                shulker_str += (
+                    new_wool(fixed_slot, wool_index, MIN_SHULKER_FILL - item_count)
+                    + ","
+                )
+
             shulker_str = create_shulker(current_shulker, shulker_str)
 
             if current_shulker <= 27:
@@ -211,13 +218,14 @@ def build_chests_from_patterns(patterns: list):
             # reset the shulker string and increment current shulker
             shulker_str = ""
             wool_index = 0
+            item_count = 0
             current_shulker += 1
 
     # create the right and left chests
     chest_r = create_chest("right", chest_r)
     chest_l = create_chest("left", chest_l)
 
-    return chest_r, chest_l
+    return chest_r, chest_l, current_shulker - 1
 
 
 # minecraft:dropper[facing=east,triggered=false]{Items:[{Slot:0b,count:1,id:"minecraft:redstone_torch"}]}
@@ -282,6 +290,64 @@ def initialize_structures():
     )
 
 
+def set_even_chest(
+    schem: mcschematic.MCSchematic,
+    chest_l: str,
+    chest_r: str,
+    shulker_count: int,
+    x_offset: int,
+):
+    schem.setBlock((OFFSET_X_EVEN + x_offset, OFFSET_Y_EVEN, OFFSET_Z_EVEN), chest_l)
+
+    schem.setBlock(
+        (OFFSET_X_EVEN + x_offset + 1, OFFSET_Y_EVEN, OFFSET_Z_EVEN), chest_r
+    )
+
+    schem.placeStructure(
+        STRUCT_DROPPERHOPPER_EVEN,
+        (OFFSET_X_EVEN + x_offset, OFFSET_Y_EVEN - 1, OFFSET_Z_EVEN),
+    )
+
+    if shulker_count == 1:
+        schem.placeStructure(
+            STRUCT_DROPPERS_SINGLE_EVEN,
+            (OFFSET_X_EVEN + x_offset, OFFSET_Y_EVEN + 1, OFFSET_Z_EVEN + 3),
+        )
+    else:
+        schem.placeStructure(
+            STRUCT_DROPPERS_DOUBLE_EVEN,
+            (OFFSET_X_EVEN + x_offset, OFFSET_Y_EVEN + 1, OFFSET_Z_EVEN + 3),
+        )
+
+
+def set_odd_chest(
+    schem: mcschematic.MCSchematic,
+    chest_l: str,
+    chest_r: str,
+    shulker_count: int,
+    x_offset: int,
+):
+    schem.setBlock((OFFSET_X_ODD + x_offset, OFFSET_Y_ODD, OFFSET_Z_ODD), chest_l)
+
+    schem.setBlock((OFFSET_X_ODD + x_offset + 1, OFFSET_Y_ODD, OFFSET_Z_ODD), chest_r)
+
+    schem.placeStructure(
+        STRUCT_DROPPERHOPPER_ODD,
+        (OFFSET_X_ODD + x_offset, OFFSET_Y_ODD - 1, OFFSET_Z_ODD),
+    )
+
+    if shulker_count == 1:
+        schem.placeStructure(
+            STRUCT_DROPPERS_SINGLE_ODD,
+            (OFFSET_X_ODD + x_offset, OFFSET_Y_ODD + 1, OFFSET_Z_ODD - 3),
+        )
+    else:
+        schem.placeStructure(
+            STRUCT_DROPPERS_DOUBLE_ODD,
+            (OFFSET_X_ODD + x_offset, OFFSET_Y_ODD + 1, OFFSET_Z_ODD - 3),
+        )
+
+
 def generate_schematic(grid: list, msg: str):
     initialize_structures()
 
@@ -306,42 +372,53 @@ def generate_schematic(grid: list, msg: str):
     # print(even_patterns_0)
     # print(even_patterns_1)
 
-    even_0_chest_l, even_0_chest_r = build_chests_from_patterns(even_patterns_0)
-    even_1_chest_l, even_1_chest_r = build_chests_from_patterns(even_patterns_1)
-    even_2_chest_l, even_2_chest_r = build_chests_from_patterns(even_patterns_2)
-    even_3_chest_l, even_3_chest_r = build_chests_from_patterns(even_patterns_3)
-    even_4_chest_l, even_4_chest_r = build_chests_from_patterns(even_patterns_4)
-    # print(even_0_chest_l)
-    # print(even_0_chest_r)
+    even_chest_0_l, even_chest_0_r, even_chest_0_count = build_chests_from_patterns(
+        even_patterns_0
+    )
+    even_chest_1_l, even_chest_1_r, even_chest_1_count = build_chests_from_patterns(
+        even_patterns_1
+    )
+    even_chest_2_l, even_chest_2_r, even_chest_2_count = build_chests_from_patterns(
+        even_patterns_2
+    )
+    even_chest_3_l, even_chest_3_r, even_chest_3_count = build_chests_from_patterns(
+        even_patterns_3
+    )
+    even_chest_4_l, even_chest_4_r, even_chest_4_count = build_chests_from_patterns(
+        even_patterns_4
+    )
+    # print(even_chest_0_l)
+    # print(even_chest_0_r)
 
-    odd_0_chest_l, odd_0_chest_r = build_chests_from_patterns(odd_patterns_0)
-    odd_1_chest_l, odd_1_chest_r = build_chests_from_patterns(odd_patterns_1)
-    odd_2_chest_l, odd_2_chest_r = build_chests_from_patterns(odd_patterns_2)
-    odd_3_chest_l, odd_3_chest_r = build_chests_from_patterns(odd_patterns_3)
-    odd_4_chest_l, odd_4_chest_r = build_chests_from_patterns(odd_patterns_4)
+    odd_chest_0_l, odd_chest_0_r, odd_chest_0_count = build_chests_from_patterns(
+        odd_patterns_0
+    )
+    odd_chest_1_l, odd_chest_1_r, odd_chest_1_count = build_chests_from_patterns(
+        odd_patterns_1
+    )
+    odd_chest_2_l, odd_chest_2_r, odd_chest_2_count = build_chests_from_patterns(
+        odd_patterns_2
+    )
+    odd_chest_3_l, odd_chest_3_r, odd_chest_3_count = build_chests_from_patterns(
+        odd_patterns_3
+    )
+    odd_chest_4_l, odd_chest_4_r, odd_chest_4_count = build_chests_from_patterns(
+        odd_patterns_4
+    )
 
     schem = mcschematic.MCSchematic()
-    schem.setBlock((0, 0, -1), even_0_chest_l)
-    schem.setBlock((1, 0, -1), even_0_chest_r)
-    schem.setBlock((2, 0, -1), even_1_chest_l)
-    schem.setBlock((3, 0, -1), even_1_chest_r)
-    schem.setBlock((4, 0, -1), even_2_chest_l)
-    schem.setBlock((5, 0, -1), even_2_chest_r)
-    schem.setBlock((6, 0, -1), even_3_chest_l)
-    schem.setBlock((7, 0, -1), even_3_chest_r)
-    schem.setBlock((8, 0, -1), even_4_chest_l)
-    schem.setBlock((9, 0, -1), even_4_chest_r)
+    set_even_chest(schem, even_chest_0_l, even_chest_0_r, even_chest_0_count, 0)
+    set_even_chest(schem, even_chest_1_l, even_chest_1_r, even_chest_1_count, 4)
+    set_even_chest(schem, even_chest_2_l, even_chest_2_r, even_chest_2_count, 8)
+    set_even_chest(schem, even_chest_3_l, even_chest_3_r, even_chest_3_count, 12)
+    set_even_chest(schem, even_chest_4_l, even_chest_4_r, even_chest_4_count, 16)
 
-    schem.setBlock((0, -1, -1), odd_0_chest_l)
-    schem.setBlock((1, -1, -1), odd_0_chest_r)
-    schem.setBlock((2, -1, -1), odd_1_chest_l)
-    schem.setBlock((3, -1, -1), odd_1_chest_r)
-    schem.setBlock((4, -1, -1), odd_2_chest_l)
-    schem.setBlock((5, -1, -1), odd_2_chest_r)
-    schem.setBlock((6, -1, -1), odd_3_chest_l)
-    schem.setBlock((7, -1, -1), odd_3_chest_r)
-    schem.setBlock((8, -1, -1), odd_4_chest_l)
-    schem.setBlock((9, -1, -1), odd_4_chest_r)
+    set_odd_chest(schem, odd_chest_0_l, odd_chest_0_r, odd_chest_0_count, 0)
+    set_odd_chest(schem, odd_chest_1_l, odd_chest_1_r, odd_chest_1_count, 4)
+    set_odd_chest(schem, odd_chest_2_l, odd_chest_2_r, odd_chest_2_count, 8)
+    set_odd_chest(schem, odd_chest_3_l, odd_chest_3_r, odd_chest_3_count, 12)
+    set_odd_chest(schem, odd_chest_4_l, odd_chest_4_r, odd_chest_4_count, 16)
+
     schem.save(
         "schems",
         re.sub(r"[^a-zA-Z0-9]", "", msg.lower())[:10],

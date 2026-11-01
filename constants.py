@@ -1,3 +1,13 @@
+OFFSET_X_EVEN = -11
+OFFSET_Y_EVEN = -7
+OFFSET_Z_EVEN = 35
+
+OFFSET_X_ODD = -6
+OFFSET_Y_ODD = -8
+OFFSET_Z_ODD = -31
+
+MIN_SHULKER_FILL = 4
+
 GREY_CODE = {
     # pattern -> signal strength
     0b0000: 0b0000,
