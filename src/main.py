@@ -460,7 +460,12 @@ def print_grid(grid: list):
 def main(page: ft.Page):
     page.title = "Geyser Display"
     page.fonts = {"Departure": "fonts/DepartureMono-Regular.otf"}
-    page.theme = ft.Theme(font_family="Departure")
+    page.dark_theme = ft.Theme(
+        font_family="Departure",
+        color_scheme_seed=ft.Colors.RED_300,
+    )
+    page.theme_mode = ft.ThemeMode.DARK
+    page.bgcolor = "#691F1A"
 
     text_input = ft.TextField(
         label="Enter text",
