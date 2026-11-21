@@ -459,7 +459,7 @@ def print_grid(grid: list):
 
 def main(page: ft.Page):
     page.title = "Geyser Display"
-    page.fonts = {"Departure": "/fonts/DepartureMono-Regular.otf"}
+    page.fonts = {"Departure": "fonts/DepartureMono-Regular.otf"}
     page.theme = ft.Theme(font_family="Departure")
 
     text_input = ft.TextField(
@@ -509,12 +509,6 @@ def main(page: ft.Page):
 
     text_input.on_change = text_on_change
     download_button.on_click = download_click
-
-    row = ft.Row(
-        spacing=5,
-        alignment=ft.MainAxisAlignment.CENTER,
-        controls=[text_input, download_button],
-    )
 
     column = ft.Column(
         spacing=10,
