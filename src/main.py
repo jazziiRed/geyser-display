@@ -17,6 +17,10 @@ STRUCT_DROPPERS_DOUBLE_ODD = mcschematic.MCStructure()
 STRUCT_DROPPERHOPPER_ODD = mcschematic.MCStructure()
 
 
+class StringLengthError(Exception):
+    pass
+
+
 def load_font(size: int = 11) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     BASE_DIR = Path(__file__).resolve().parent
     LOCAL_FONT_PATH = BASE_DIR / "assets" / "fonts" / "DepartureMono-Regular.otf"
@@ -250,6 +254,10 @@ def build_chests_from_patterns(patterns: list):
             wool_index = 0
             item_count = 0
             current_shulker += 1
+
+            # throw error if we have filled the final shulker and there are more patterns
+            if current_shulker > 54 and index < len(patterns) - 1:
+                raise StringLengthError("String too long")
 
     # create the right and left chests
     chest_r = create_chest("right", chest_r)
@@ -486,6 +494,48 @@ def main(page: ft.Page):
 
     save_file_dialog = ft.FilePicker()
 
+    def close_error(e):
+        error_box.visible = False
+        error_box.update()
+
+    def show_error(message: str):
+        error_text.value = message
+        error_box.visible = True
+        error_box.update()
+
+    error_text = ft.Text(
+        value="Something went wrong.",
+        color=ft.Colors.ON_ERROR_CONTAINER,
+        expand=True,
+    )
+
+    error_box = ft.Container(
+        visible=False,
+        max_width=800,
+        padding=ft.Padding.symmetric(horizontal=10),
+        content=ft.Container(
+            bgcolor=ft.Colors.ERROR_CONTAINER,
+            border=ft.Border.all(1, ft.Colors.ERROR),
+            border_radius=10,
+            padding=ft.Padding.symmetric(horizontal=12, vertical=8),
+            content=ft.Row(
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                controls=[
+                    ft.Icon(ft.Icons.ERROR_OUTLINE, color=ft.Colors.ERROR),
+                    error_text,
+                    ft.IconButton(
+                        icon=ft.Icons.CLOSE,
+                        icon_color=ft.Colors.ON_ERROR_CONTAINER,
+                        icon_size=18,
+                        tooltip="Dismiss",
+                        on_click=close_error,
+                    ),
+                ],
+            ),
+        ),
+    )
+
     def text_on_change(e):
         if "\n" in e.control.value or "\r" in e.control.value:
             e.control.value = e.control.value.replace("\r", "").replace("\n", "")
@@ -494,26 +544,29 @@ def main(page: ft.Page):
         download_button.update()
 
     async def download_click(e):
-        msg = text_input.value or ""
-        schem_file_name = re.sub(r"[^a-zA-Z0-9]", "", msg.lower())[:10]
+        try:
+            msg = text_input.value or ""
+            schem_file_name = re.sub(r"[^a-zA-Z0-9]", "", msg.lower())[:10]
 
-        grid = create_msg_grid(msg)
+            grid = create_msg_grid(msg)
 
-        schem = generate_schematic(grid, msg)
+            schem = generate_schematic(grid, msg)
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            schem.save(
-                temp_dir,
-                schem_file_name,
-                mcschematic.Version.JE_1_21,
+            with tempfile.TemporaryDirectory() as temp_dir:
+                schem.save(
+                    temp_dir,
+                    schem_file_name,
+                    mcschematic.Version.JE_1_21,
+                )
+                file_path = Path(temp_dir) / (schem_file_name + ".schem")
+                schem_bytes = file_path.read_bytes()
+
+            await save_file_dialog.save_file(
+                file_name=schem_file_name + ".schem",
+                src_bytes=schem_bytes,
             )
-            file_path = Path(temp_dir) / (schem_file_name + ".schem")
-            schem_bytes = file_path.read_bytes()
-
-        await save_file_dialog.save_file(
-            file_name=schem_file_name + ".schem",
-            src_bytes=schem_bytes,
-        )
+        except StringLengthError as e:
+            show_error("String too long")
 
     text_input.on_change = text_on_change
     download_button.on_click = download_click
@@ -588,6 +641,7 @@ You must have the **worldedit** mod installed to paste it into your world.
                     content=text_input,
                 ),
             ),
+            error_box,
             download_button,
             explanation_expansion,
         ],
