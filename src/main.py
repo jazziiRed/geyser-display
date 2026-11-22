@@ -472,6 +472,9 @@ def main(page: ft.Page):
         multiline=True,
         min_lines=3,
         width=float("inf"),
+        border=ft.OutlineInputBorder(
+            border_radius=10, side=ft.BorderSide(color=ft.Colors.OUTLINE)
+        ),
     )
 
     download_button = ft.Button(
@@ -515,28 +518,78 @@ def main(page: ft.Page):
     text_input.on_change = text_on_change
     download_button.on_click = download_click
 
+    explanation = ft.Markdown(
+        value="""
+This tool takes whatever you type into the text box above and generates a `.schem` file that can be pasted directly into the Geyser Display.
+You must have the **worldedit** mod installed to paste it into your world.
+
+### Directions
+1. Type your string into the text box above.
+2. Click the **Download** button.
+3. Copy the downloaded `.schem` file into the schematics folder in your file system. [See this guide](https://madelinemiller.dev/blog/use-schematics-worldedit/) for help on how to use worldedit and where to find your schematics folder.
+4. In the world download, stand on the **center target block** where the smoke comes out and run
+   ```
+   //schem load {schem name here}
+   //paste -a
+   ```
+   _*the **-a** is VERY important, as it ignores air when pasting_
+
+5. Activate and enjoy :)
+    """,
+        selectable=True,
+        extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+        auto_follow_links=True,
+        md_style_sheet=ft.MarkdownStyleSheet(
+            list_indent=32,
+            code_text_style=ft.TextStyle(
+                font_family="Departure",
+                color="#FFFFFF",
+                bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.PRIMARY),
+            ),
+        ),
+        code_style_sheet=ft.MarkdownStyleSheet(
+            code_text_style=ft.TextStyle(font_family="Departure", color="#FFFFFF")
+        ),
+    )
+
+    tile_border = ft.RoundedRectangleBorder(
+        radius=10,
+        side=ft.BorderSide(width=1, color=ft.Colors.OUTLINE),
+    )
+
+    explanation_expansion = ft.Container(
+        max_width=800,
+        padding=ft.Padding.symmetric(horizontal=10),
+        content=ft.ExpansionTile(
+            title="Explanation",
+            controls=[explanation],
+            affinity=ft.TileAffinity.LEADING,
+            controls_padding=10,
+            shape=tile_border,
+            collapsed_shape=tile_border,
+        ),
+    )
+
     column = ft.Column(
         spacing=10,
         alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        scroll=ft.ScrollMode.AUTO,
         controls=[
             ft.Text(
                 value="Geyser Display Schematic Generator",
                 theme_style=ft.TextThemeStyle.TITLE_LARGE,
             ),
-            # row,
             ft.Container(
                 alignment=ft.Alignment.CENTER,
                 content=ft.Container(
                     max_width=800,
                     padding=ft.Padding.symmetric(horizontal=10),
-                    content=ft.Column(
-                        horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-                        controls=[text_input],
-                    ),
+                    content=text_input,
                 ),
             ),
             download_button,
+            explanation_expansion,
         ],
     )
 
