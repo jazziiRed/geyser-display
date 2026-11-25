@@ -632,6 +632,7 @@ You must have the **worldedit** mod installed to paste it into your world.
             ft.Text(
                 value="Geyser Display Schematic Generator",
                 theme_style=ft.TextThemeStyle.TITLE_LARGE,
+                text_align=ft.TextAlign.CENTER,
             ),
             ft.Container(
                 alignment=ft.Alignment.CENTER,
